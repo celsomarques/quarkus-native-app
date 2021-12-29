@@ -1,0 +1,114 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+    id 'jacoco'
+}
+
+group 'com.example'
+version '1.0.0'
+
+apply plugin: 'java'
+apply plugin: 'io.quarkus'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation group: 'org.jboss.logging', name: 'commons-logging-jboss-logging', version: '1.0.0.Final'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation 'org.projectlombok:lombok:1.18.20'
+
+    // LOMBOK
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+
+    // QUARKUS
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy', version: quarkusPlatformVersion
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy-jackson', version: quarkusPlatformVersion
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy-mutiny', version: quarkusPlatformVersion
+    implementation group: 'io.quarkus', name: 'quarkus-smallrye-reactive-messaging-kafka', version: quarkusPlatformVersion
+    implementation group: 'io.quarkus', name: 'quarkus-smallrye-health', version: quarkusPlatformVersion
+    implementation group: 'io.quarkus', name: 'quarkus-smallrye-fault-tolerance', version: quarkusPlatformVersion
+
+    testImplementation group: 'io.smallrye.reactive', name: 'smallrye-reactive-messaging-in-memory', version: '3.10.1'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+
+    // TEST
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'io.quarkus:quarkus-junit5:2.5.0.Final'
+    testImplementation 'io.quarkus:quarkus-junit5-mockito:2.5.0.Final'
+    testImplementation 'io.rest-assured:rest-assured:4.4.0'
+
+    implementation 'io.quarkus:quarkus-jacoco:2.5.0.Final'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+check {
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = file('./coverage/html')
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+    reportsDirectory = file('./coverage') as Directory
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.5
+            }
+        }
+
+        rule {
+            enabled = true
+            element = 'BUNDLE'
+            includes = ['com.example.*']
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.9
+            }
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.8
+            }
+        }
+    }
+}

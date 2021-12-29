@@ -1,0 +1,35 @@
+# Limit memory of build
+ARG BUILD_MEMORY=4g
+
+## Stage 1: build native sources
+FROM gradle:7.3-jdk11 AS gradle-build
+USER root
+COPY build.gradle /code/
+COPY settings.gradle /code/
+COPY gradle.properties /code/
+
+WORKDIR /code
+COPY src /code/src
+
+RUN gradle clean build -Dquarkus.package.type=native-sources
+
+
+## Stage 2: build quarkus-native
+FROM quay.io/quarkus/ubi-quarkus-mandrel:21.3-java11 AS native-build
+USER root
+ARG BUILD_MEMORY
+COPY --from=gradle-build /code/build/native-sources /build
+WORKDIR /build
+
+RUN native-image $(cat native-image.args) -J-Xmx$BUILD_MEMORY
+
+
+## Stage 3 : create the docker final image
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5
+WORKDIR /work
+COPY --from=native-build /build/*-runner /work/application
+COPY docker-entrypoint.sh /work/entrypoint.sh
+RUN chmod 755 /work/entrypoint.sh
+EXPOSE 8080
+ENTRYPOINT [ "/work/entrypoint.sh" ]
+CMD ["/work/application", "-Dquarkus.http.host=0.0.0.0"]

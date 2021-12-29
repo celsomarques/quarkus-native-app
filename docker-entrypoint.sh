@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo $GOOGLE_CREDENTIALS_ENCODED_KEY | base64 -d > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+exec "$@"

@@ -1,0 +1,75 @@
+version: '3'
+services:
+
+  zookeeper:
+    image: zookeeper:3.6.2
+    container_name: zookeeper_app
+    ports:
+      - 2181:2181
+      - 8090:8080
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+    networks:
+      app:
+
+  kafka:
+    image: 'bitnami/kafka:latest'
+    container_name: kafka_app
+    ports:
+      - '9092:9092'
+      - '9093:9093'
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ZOOKEEPER_PROTOCOL=PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:SASL_PLAINTEXT,CLIENT:SASL_PLAINTEXT
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9093,CLIENT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9093,CLIENT://localhost:9092
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=PLAIN
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN
+    depends_on:
+      - zookeeper
+    networks:
+      app:
+
+  app_ok:
+    build:
+      context: .
+      dockerfile: Dockerfile.ok
+    restart: unless-stopped
+    image: app-ok
+    container_name: app-ok
+    environment:
+      - KAFKA_URL=kafka:9093
+      - KAFKA_GROUP_ID=app-ok
+      - KAFKA_USERNAME=user
+      - KAFKA_PASSWORD=bitnami
+    ports:
+      - '9090:8080'
+    networks:
+      app:
+
+  app_nok:
+    build:
+      context: .
+      dockerfile: Dockerfile.nok
+    restart: unless-stopped
+    image: app-nok
+    container_name: app-nok
+    environment:
+      - KAFKA_URL=kafka:9093
+      - KAFKA_GROUP_ID=app-nok
+      - KAFKA_USERNAME=user
+      - KAFKA_PASSWORD=bitnami
+    ports:
+      - '9091:8080'
+    networks:
+      app:
+
+networks:
+  app:
+    ipam:
+      driver: default

@@ -1,0 +1,11 @@
+*
+!gradle*
+!.gradlew
+!build.gradle
+!settings.gradle
+!src
+!target/*-runner
+!target/*-runner.jar
+!target/lib/*
+!target/quarkus-app/
+!docker-entrypoint.sh
