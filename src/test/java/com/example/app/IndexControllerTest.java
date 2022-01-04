@@ -15,6 +15,6 @@ public class IndexControllerTest {
                 .when().get("/v1")
                 .then()
                     .statusCode(200)
-                    .body(is("FHDB Parser - v1.0.0"));
+                    .body(is("Quarkus Native App"));
     }
 }
